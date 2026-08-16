@@ -1,7 +1,11 @@
-name: Primer Pipeline CI
+name: Segundo Pipeline CI
 
 on:
   push:
+    branches:
+      - main
+
+  pull_request:
     branches:
       - main
 
