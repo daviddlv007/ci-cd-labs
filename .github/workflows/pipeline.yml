@@ -1,14 +1,13 @@
 name: Segundo Pipeline CI
 
 on:
-
   pull_request:
     branches:
       - main
 
 jobs:
   hello-ci:
-    name: Hello CI
+    name: Build y Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -18,10 +17,10 @@ jobs:
       - name: Mostrar información del entorno
         run: |
           echo "================================"
-          echo "      PRIMER PIPELINE CI"
+          echo "         PIPELINE CI"
           echo "================================"
           echo "Repositorio: ${{ github.repository }}"
-          echo "Rama: ${{ github.ref_name }}"
+          echo "Rama: ${{ github.head_ref }}"
           echo "Commit: ${{ github.sha }}"
           echo "================================"
 
@@ -30,6 +29,108 @@ jobs:
 
       - name: Mostrar versión de Git
         run: git --version
+
+      # ==========================================
+      # ETAPA DE COMPILACIÓN
+      # ==========================================
+
+      - name: Compilación
+        run: |
+          echo "================================"
+          echo "      INICIANDO COMPILACIÓN"
+          echo "================================"
+
+          echo "Verificando archivos del proyecto..."
+
+          test -f README.md
+          echo "✓ README.md encontrado"
+
+          test -f hello.txt
+          echo "✓ hello.txt encontrado"
+
+          echo "================================"
+          echo "  COMPILACIÓN EXITOSA"
+          echo "================================"
+
+      # ==========================================
+      # ETAPA DE PRUEBAS
+      # ==========================================
+
+      - name: Preparar pruebas
+        run: |
+          mkdir -p tests
+
+          cat > tests/test.sh <<'EOF'
+          #!/bin/bash
+
+          echo "================================"
+          echo "       EJECUTANDO PRUEBAS"
+          echo "================================"
+
+          echo ""
+          echo "Prueba 1: Verificar README.md"
+          test -f README.md
+          echo "✓ README.md existe"
+
+          echo ""
+          echo "Prueba 2: Verificar hello.txt"
+          test -f hello.txt
+          echo "✓ hello.txt existe"
+
+          echo ""
+          echo "Prueba 3: Verificar contenido de hello.txt"
+          grep -q "Hola" hello.txt
+          echo "✓ hello.txt contiene la palabra Hola"
+
+          echo ""
+          echo "================================"
+          echo "    TODAS LAS PRUEBAS OK"
+          echo "================================"
+          EOF
+
+          chmod +x tests/test.sh
+
+      - name: Ejecutar pruebas
+        run: |
+          ./tests/test.sh
+
+      # ==========================================
+      # GENERAR REPORTE
+      # ==========================================
+
+      - name: Generar reporte de pruebas
+        if: always()
+        run: |
+          mkdir -p reports
+
+          echo "Reporte de ejecución de pruebas" > reports/test-report.txt
+          echo "================================" >> reports/test-report.txt
+          echo "" >> reports/test-report.txt
+
+          echo "README.md existe: OK" >> reports/test-report.txt
+          echo "hello.txt existe: OK" >> reports/test-report.txt
+
+          if grep -q "Hola" hello.txt; then
+            echo "hello.txt contiene la palabra Hola: OK" >> reports/test-report.txt
+          else
+            echo "hello.txt contiene la palabra Hola: FALLÓ" >> reports/test-report.txt
+          fi
+
+          echo "" >> reports/test-report.txt
+          echo "Resultado final: PRUEBAS EJECUTADAS" >> reports/test-report.txt
+
+          cat reports/test-report.txt
+
+      # ==========================================
+      # PUBLICAR ARTIFACTO
+      # ==========================================
+
+      - name: Publicar reporte de pruebas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-pruebas
+          path: reports/test-report.txt
 
       - name: Finalizar pipeline
         run: echo "Pipeline ejecutado correctamente."
