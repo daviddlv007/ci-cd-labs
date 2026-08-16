@@ -1,9 +1,6 @@
 name: Segundo Pipeline CI
 
 on:
-  push:
-    branches:
-      - main
 
   pull_request:
     branches:
