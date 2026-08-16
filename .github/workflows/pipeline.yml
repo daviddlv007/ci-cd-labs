@@ -7,10 +7,13 @@ on:
       - main
 
 jobs:
-  hell
+  hello-ci:
+    name: Hello CI
+    runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v99
 
       - name: Mostrar información del entorno
         run: |
