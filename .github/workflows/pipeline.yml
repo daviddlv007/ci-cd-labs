@@ -11,8 +11,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
+      # ==========================================
+      # CHECKOUT
+      # ==========================================
+
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      # ==========================================
+      # INFORMACIÓN DEL ENTORNO
+      # ==========================================
 
       - name: Mostrar información del entorno
         run: |
@@ -48,17 +57,23 @@ jobs:
           test -f hello.txt
           echo "✓ hello.txt encontrado"
 
+          echo ""
           echo "================================"
-          echo "  COMPILACIÓN EXITOSA"
+          echo "   COMPILACIÓN EXITOSA"
           echo "================================"
 
       # ==========================================
-      # ETAPA DE PRUEBAS
+      # PREPARAR PRUEBAS
       # ==========================================
 
       - name: Preparar pruebas
         run: |
           mkdir -p tests
+          mkdir -p reports
+
+          echo "Reporte de ejecución de pruebas" > reports/test-report.txt
+          echo "================================" >> reports/test-report.txt
+          echo "" >> reports/test-report.txt
 
           cat > tests/test.sh <<'EOF'
           #!/bin/bash
@@ -67,62 +82,94 @@ jobs:
           echo "       EJECUTANDO PRUEBAS"
           echo "================================"
 
+          RESULTADO=0
+
           echo ""
           echo "Prueba 1: Verificar README.md"
-          test -f README.md
-          echo "✓ README.md existe"
+
+          if test -f README.md; then
+            echo "✓ README.md existe"
+            echo "Prueba 1: OK" >> reports/test-report.txt
+          else
+            echo "✗ README.md no existe"
+            echo "Prueba 1: FALLÓ" >> reports/test-report.txt
+            RESULTADO=1
+          fi
+
 
           echo ""
           echo "Prueba 2: Verificar hello.txt"
-          test -f hello.txt
-          echo "✓ hello.txt existe"
+
+          if test -f hello.txt; then
+            echo "✓ hello.txt existe"
+            echo "Prueba 2: OK" >> reports/test-report.txt
+          else
+            echo "✗ hello.txt no existe"
+            echo "Prueba 2: FALLÓ" >> reports/test-report.txt
+            RESULTADO=1
+          fi
+
 
           echo ""
           echo "Prueba 3: Verificar contenido de hello.txt"
-          grep -q "Hola" hello.txt
-          echo "✓ hello.txt contiene la palabra Hola"
+
+          if test -f hello.txt && grep -q "Hola" hello.txt; then
+            echo "✓ hello.txt contiene la palabra Hola"
+            echo "Prueba 3: OK" >> reports/test-report.txt
+          else
+            echo "✗ hello.txt no contiene la palabra Hola"
+            echo "Prueba 3: FALLÓ" >> reports/test-report.txt
+            RESULTADO=1
+          fi
+
 
           echo ""
           echo "================================"
-          echo "    TODAS LAS PRUEBAS OK"
+
+          if [ $RESULTADO -eq 0 ]; then
+            echo "    TODAS LAS PRUEBAS OK"
+            echo "" >> reports/test-report.txt
+            echo "Resultado final: EXITOSO" >> reports/test-report.txt
+          else
+            echo "    ALGUNAS PRUEBAS FALLARON"
+            echo "" >> reports/test-report.txt
+            echo "Resultado final: FALLÓ" >> reports/test-report.txt
+          fi
+
           echo "================================"
+
+          exit $RESULTADO
           EOF
 
           chmod +x tests/test.sh
+
+      # ==========================================
+      # EJECUTAR PRUEBAS
+      # ==========================================
 
       - name: Ejecutar pruebas
         run: |
           ./tests/test.sh
 
       # ==========================================
-      # GENERAR REPORTE
+      # MOSTRAR REPORTE
+      # Se ejecuta incluso si las pruebas fallan
       # ==========================================
 
-      - name: Generar reporte de pruebas
+      - name: Mostrar reporte de pruebas
         if: always()
         run: |
-          mkdir -p reports
-
-          echo "Reporte de ejecución de pruebas" > reports/test-report.txt
-          echo "================================" >> reports/test-report.txt
-          echo "" >> reports/test-report.txt
-
-          echo "README.md existe: OK" >> reports/test-report.txt
-          echo "hello.txt existe: OK" >> reports/test-report.txt
-
-          if grep -q "Hola" hello.txt; then
-            echo "hello.txt contiene la palabra Hola: OK" >> reports/test-report.txt
-          else
-            echo "hello.txt contiene la palabra Hola: FALLÓ" >> reports/test-report.txt
-          fi
-
-          echo "" >> reports/test-report.txt
-          echo "Resultado final: PRUEBAS EJECUTADAS" >> reports/test-report.txt
+          echo "================================"
+          echo "       REPORTE DE PRUEBAS"
+          echo "================================"
 
           cat reports/test-report.txt
 
+          echo "================================"
+
       # ==========================================
-      # PUBLICAR ARTIFACTO
+      # PUBLICAR REPORTE COMO ARTIFACT
+      # Se ejecuta incluso si las pruebas fallan
       # ==========================================
 
       - name: Publicar reporte de pruebas
@@ -132,5 +179,13 @@ jobs:
           name: reporte-pruebas
           path: reports/test-report.txt
 
+      # ==========================================
+      # FINALIZAR PIPELINE
+      # Solo se ejecuta si todo salió correctamente
+      # ==========================================
+
       - name: Finalizar pipeline
-        run: echo "Pipeline ejecutado correctamente."
+        run: |
+          echo "================================"
+          echo "   PIPELINE EJECUTADO CORRECTAMENTE"
+          echo "================================"
