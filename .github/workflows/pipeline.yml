@@ -13,7 +13,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v99
+        uses: actions/checkout@v4
 
       - name: Mostrar información del entorno
         run: |
